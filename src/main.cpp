@@ -18,6 +18,13 @@ struct Mem
             Data[i] = 0;
         }
     }
+
+    // Read 1 byte
+    Byte operator[](u32 Address) const
+    {
+        // Assert here Address is < MAX_MEM
+        return Data[Address];
+    }
 };
 
 struct CPU
@@ -45,6 +52,39 @@ struct CPU
         A = X = Y = 0;
         memory.Initialize();
     }
+
+    Byte FetchByte(u32& Cycles, Mem& memory)
+    {
+        Byte Data = memory[PC];
+        PC++;
+        Cycles--;
+        return Data;
+    }
+
+    // Opcodes
+    // Load Accumulator Immediate mode
+    static constexpr Byte INS_LDA_IM = 0xA9;
+
+    void Execute(u32 Cycles, Mem& memory)
+    {
+        while (Cycles > 0)
+        {
+            Byte Instruction = FetchByte(Cycles, memory);
+            switch(Instruction)
+            {
+                case INS_LDA_IM:
+                {
+                    Byte Value = FetchByte(Cycles, memory);
+                    A = Value;
+                    Z = (A == 0);
+                    // If bit 7 of the accumulator is set, then it's negative
+                    N = (A & 0b10000000) > 0;    
+                }
+
+                break;
+            }
+        }
+    }
 };
 
 int main()
@@ -52,5 +92,6 @@ int main()
     Mem mem;
     CPU cpu;
     cpu.Reset(mem);
+    cpu.Execute(2, mem);
     return 0;
 }
