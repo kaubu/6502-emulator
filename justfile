@@ -1,3 +1,5 @@
+default: run
+
 # Build the project
 build:
     g++ src/main.cpp
