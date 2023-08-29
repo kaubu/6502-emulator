@@ -23,6 +23,19 @@ struct Mem
     Byte operator[](u32 Address) const
     {
         // Assert here Address is < MAX_MEM
+        if (Address > MAX_MEM) {
+            printf("Address is out-of-bounds of max memory!\n");
+        }
+        return Data[Address];
+    }
+
+    // Write 1 byte
+    Byte& operator[](u32 Address)
+    {
+        // Assert here Address is < MAX_MEM
+        if (Address > MAX_MEM) {
+            printf("Address is out-of-bounds of max memory!\n");
+        }
         return Data[Address];
     }
 };
@@ -69,8 +82,8 @@ struct CPU
     {
         while (Cycles > 0)
         {
-            Byte Instruction = FetchByte(Cycles, memory);
-            switch(Instruction)
+            Byte Ins = FetchByte(Cycles, memory);
+            switch(Ins)
             {
                 case INS_LDA_IM:
                 {
@@ -81,7 +94,11 @@ struct CPU
                     N = (A & 0b10000000) > 0;    
                 }
 
-                break;
+                default:
+                {
+                    printf("Instruction not handled: %d\n", Ins);
+                    break;
+                }
             }
         }
     }
@@ -92,6 +109,10 @@ int main()
     Mem mem;
     CPU cpu;
     cpu.Reset(mem);
+    // Inline a little program
+    mem[0xFFFC] = CPU::INS_LDA_IM;
+    mem[0xFFFD] = 0x42;
+    // End inline
     cpu.Execute(2, mem);
     return 0;
 }
