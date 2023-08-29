@@ -74,9 +74,25 @@ struct CPU
         return Data;
     }
 
+    Byte ReadByte(u32& Cycles, Byte Address, Mem& memory)
+    {
+        Byte Data = memory[Address];
+        Cycles--;
+        return Data;
+    }
+
     // Opcodes
-    // Load Accumulator Immediate mode
-    static constexpr Byte INS_LDA_IM = 0xA9;
+    static constexpr Byte
+        INS_LDA_IM  = 0xA9,     // Load Accumulator: Immediate Mode
+        INS_LDA_ZP  = 0xA5,     // Load Accumulator: Zero Page
+        INS_LDA_ZPX = 0xB5;     // Load Accumulator: Zero Page.X
+
+    void LDASetStatus()
+    {
+        Z = (A == 0);
+        // If bit 7 of the accumulator is set, then it's negative
+        N = (A & 0b10000000) > 0;
+    }
 
     void Execute(u32 Cycles, Mem& memory)
     {
@@ -89,9 +105,26 @@ struct CPU
                 {
                     Byte Value = FetchByte(Cycles, memory);
                     A = Value;
-                    Z = (A == 0);
-                    // If bit 7 of the accumulator is set, then it's negative
-                    N = (A & 0b10000000) > 0;    
+                    LDASetStatus();
+                    break;    
+                }
+                
+                case INS_LDA_ZP:
+                {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    A = ReadByte(Cycles, ZeroPageAddress, memory);
+                    LDASetStatus();
+                    break;
+                }
+
+                case INS_LDA_ZPX:
+                {
+                    Byte ZeroPageAddress = FetchByte(Cycles, memory);
+                    ZeroPageAddress += X;
+                    Cycles--;
+                    A = ReadByte(Cycles, ZeroPageAddress, memory);
+                    LDASetStatus();
+                    break;
                 }
 
                 default:
@@ -110,9 +143,10 @@ int main()
     CPU cpu;
     cpu.Reset(mem);
     // Inline a little program
-    mem[0xFFFC] = CPU::INS_LDA_IM;
+    mem[0xFFFC] = CPU::INS_LDA_ZP;
     mem[0xFFFD] = 0x42;
+    mem[0x0042] = 0x84;
     // End inline
-    cpu.Execute(2, mem);
+    cpu.Execute(3, mem);
     return 0;
 }
